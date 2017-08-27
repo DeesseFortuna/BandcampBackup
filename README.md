@@ -29,7 +29,7 @@ sudo bash bandcamp-backup.sh https://artistname.bandcamp.com/ ArtistName
 ## Flaws/Caveats/Future Development
 - No support for multiple pages (easy enough to do manually, or write a quick parent script to call this one for every page)
 - Only supports **single word artist folder names** (easy enough to change after downloading)
-- Doesn't tag the downloaded files - on Windows I suggest [foobar2000](https://www.foobar2000.org) with the excellent [discogs plugin](https://bitbucket.org/zoomorph/foo_discogs).
+- Doesn't tag the downloaded files - though if they were tagged before uploading, those will be retained. Otherwise on Windows I suggest [foobar2000](https://www.foobar2000.org) with the excellent [discogs plugin](https://bitbucket.org/zoomorph/foo_discogs).
 - Can miss some non-standard symbols in album names. This is because the album name is extracted from the URL referring to it.
 - Deletes all .list files in the immediate directory, these are used for temporary storage - **you should probably be running it in its own directory anyway.**
 
