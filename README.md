@@ -1,4 +1,4 @@
-# BandcampBackup
+# backup-bandcamp
 This is a Bash script to backup bandcamp pages in a pretty Artist/Album/Track.mp3 folder structure.
 
 ## Dependencies
