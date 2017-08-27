@@ -28,7 +28,7 @@ sudo bash bandcamp-backup.sh https://artistname.bandcamp.com/ ArtistName
 
 ## Flaws/Caveats/Future Development
 - Can miss some non-standard symbols in album names. This is because the album name is extracted from the URL referring to it.
-- Deletes text files in the immediate directory - **you should probably be running it in its own directory** anyway.
+- Deletes all .list files in the immediate directory, these are used for temporary storage - **you should probably be running it in its own directory anyway.**
 - No support for multiple pages (easy enough to do manually, or write a quick parent script to call it for every page)
 - Only supports **single word artist folder names** (easy enough to change after downloading)
 
