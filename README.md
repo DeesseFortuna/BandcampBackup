@@ -28,7 +28,7 @@ sudo bash bandcamp-backup.sh https://artistname.bandcamp.com/ ArtistName
 
 ## Flaws/Caveats/Future Development
 - No support for multiple pages (easy enough to do manually, or write a quick parent script to call it for every page)
-- Only supports *single word artist folder names* (easy enough to change after downloading)
+- Only supports **single word artist folder names** (easy enough to change after downloading)
 
 #### Disclaimer
 - By downloading and/or using this script you agree you own the rights to the content you will be backing up (or have purchased it yourself) and are not infringing on your local copyright law. Use at your own risk, and don't be a coconut.
