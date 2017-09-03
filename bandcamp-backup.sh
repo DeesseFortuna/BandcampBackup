@@ -1,28 +1,25 @@
 #!/bin/bash
-URL="$1"
-ARTIST="$2"
+URL="$1" #give me the ROOT directory with no trailing slash, i.e. https://artist.bandcamp.com
+ARTIST="$2" #no spaces, can rename after (yes I'm lazy) 
 
-echo ""
-echo "Pre-execution cleanup"
-rm ./index.html*
+printf "\nPre-execution cleanup"
+rm ./index.temp*
 rm ./*.list
 
-echo ""
-echo "Fetching page..."
-wget $URL #get the page
+printf "\nFetching page..."
+wget -O index.temp $URL #get the page
 
-grep -o '"\/album\/.*">' index.html > dirlist.list #grep out the album urls
-rm ./index.html* #delete temp index page(s)
+grep -o '"\/album\/.*">' index.temp > dirlist.list #grep out the album urls
+rm ./index.temp* #delete temp index page(s)
 
 sed -e 's/^"//' dirlist.list > dirlist2.list #trim preceding double quote
 rm ./dirlist.list
 
 NUMBER=`cat dirlist2.list | wc -l` #get the length of dirlist2 (# of albums)
 
-echo ""
-echo "Found" $NUMBER "album directories:"
+printf "\nFound %s album directories:" $NUMBER
 sed -e 's/">$//' dirlist2.list | sudo tee -a dirlist.list #trim trailing "> and print to console
-rm ./dirlist2.list 
+rm ./dirlist2.list
 
 sed -e 's/^\/album\///' dirlist.list > albumlist.list #trim preceding /album/
 sed -e 's/-/ /g' albumlist.list > albumlist2.list #replace - with ' '
@@ -34,27 +31,22 @@ while IFS= read -r line; do
 done < albumlist2.list
 rm albumlist2.list
 
-echo ""
-echo "Generated these pretty directory names:"
+printf "\nGenerated these pretty directory names:"
 cat albumlist.list
 
-echo ""
-echo "Making artist directory..."
+printf "\nMaking artist directory..."
 mkdir "$ARTIST"
 
-echo ""
-echo "Descending to ./" $ARTIST
+printf "\nDescending to ./%S" $ARTIST
 cd "$ARTIST"
 
-echo ""
-echo "Making album directories..."
+printf "\nMaking album directories..."
 while IFS= read -r line; do
 	mkdir "$line"
-	echo "Directory" $line "made."
+	printf "\nDirectory %s made." $line
 done < ./../albumlist.list
 
-echo ""
-echo "Starting downloads..."
+printf "\nStarting downloads..."
 
 COUNT=1
 while IFS= read -r line; do
@@ -63,21 +55,17 @@ while IFS= read -r line; do
 	echo "Descending to ./" $ALBUM
 	cd "$ALBUM"
 	echo "Downloading" $ALBUM
-	youtube-dl --audio-quality=0 --audio-format=mp3 -o "%(title)s.%(ext)s" $URL$line
+	youtube-dl -f bestaudio -x --audio-quality=0 --audio-format=mp3 -o "%(title)s.%(ext)s" $URL$line
 	echo "Ascending..."
-	echo ""
+	printf "\n"
 	cd ..
 	let "COUNT++"
 done < ./../dirlist.list
 
-echo ""
-echo "Ascending..."
+printf "\nAscending..."
 cd ..
 
-echo ""
-echo "Cleaning up temp files..."
+printf "\nCleaning up temp files..."
 rm ./*.list
 
-
-echo ""
-echo "Done!"
+printf "\nDone!"
