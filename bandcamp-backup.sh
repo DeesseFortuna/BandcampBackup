@@ -2,7 +2,7 @@
 URL="$1" #give me the MUSIC directory with no trailing slash, i.e. https://artist.bandcamp.com/music
 ARTIST="$2" #no spaces, you can rename it after (yes I'm lazy) 
 
-printf "\nPre-execution cleanup"
+printf "\nPre-execution cleanup..."
 rm ./index.temp*
 rm ./*.list
 
@@ -15,6 +15,7 @@ rm ./index.temp* #delete temp index page(s)
 
 sed -e 's/^"//' albumdirlist.list > albumdirlist2.list #trim preceding double quote
 sed -e 's/^"//' trackdirlist.list > trackdirlist2.list
+rm ./albumdirlist.list
 rm ./trackdirlist.list
 
 N_ALBUMS=`cat albumdirlist2.list | wc -l` #get the length of albumdirlist2 (# of albums)
