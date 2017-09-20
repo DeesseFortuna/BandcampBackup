@@ -7,15 +7,14 @@ rm ./index.temp*
 rm ./*.list
 
 printf "\nFetching page..."
-wget -O index.temp $URL #get the page
+wget -O index.temp $URL #get the page, save to specific temp filename
 
 grep -o '"\/album\/.*">' index.temp > albumdirlist.list #grep out the album urls
 grep -o '"\/track\/.*">' index.temp > trackdirlist.list #grep out the track urls
 rm ./index.temp* #delete temp index page(s)
 
 sed -e 's/^"//' albumdirlist.list > albumdirlist2.list #trim preceding double quote
-sed -e 's/^"//' trackdirlist.list > trackdirlist2.list #trim preceding double quote
-rm ./albumdirlist.list
+sed -e 's/^"//' trackdirlist.list > trackdirlist2.list
 rm ./trackdirlist.list
 
 N_ALBUMS=`cat albumdirlist2.list | wc -l` #get the length of albumdirlist2 (# of albums)
@@ -23,14 +22,14 @@ N_TRACKS=`cat trackdirlist2.list | wc -l` #get length of trackdirlist2 (# of tra
 
 printf "\nFound %s album and %s track directories:\n" $N_ALBUMS $N_TRACKS
 sed -e 's/">$//' albumdirlist2.list | sudo tee -a albumdirlist.list #trim trailing "> and print to console
-sed -e 's/">$//' trackdirlist2.list | sudo tee -a trackdirlist.list #trim trailing "> and print to console
+sed -e 's/">$//' trackdirlist2.list | sudo tee -a trackdirlist.list
 rm ./albumdirlist2.list
 rm ./trackdirlist2.list
 
 sed -e 's/^\/album\///' albumdirlist.list > albumlist.list #trim preceding /album/
 sed -e 's/^\/track\///' trackdirlist.list > tracklist.list #trim preceding /track/
 sed -e 's/-/ /g' albumlist.list > albumlist2.list #replace - with ' '
-sed -e 's/-/ /g' tracklist.list > tracklist2.list #replace - with ' '
+sed -e 's/-/ /g' tracklist.list > tracklist2.list
 rm ./albumlist.list
 rm ./tracklist.list
 
@@ -41,7 +40,7 @@ done < albumlist2.list
 rm ./albumlist2.list
 
 while IFS= read -r line; do
-	Target=`echo $line | tr [A-Z] [a-z] | sed -e 's/^./\U&/g; s/ ./\U&/g'` #capitalizes the first letter of each word
+	Target=`echo $line | tr [A-Z] [a-z] | sed -e 's/^./\U&/g; s/ ./\U&/g'`
 	echo $Target >> tracklist.list
 done < tracklist2.list
 rm ./tracklist2.list
@@ -61,7 +60,7 @@ printf "\nDescending to ./%s\n" $ARTIST
 cd "$ARTIST"
 
 printf "\nMaking album directories..."
-IFS=; while read -r line; do
+IFS=; while read -r line; do #reads whole lines instead of single words like `while IFS= read -r`
 	mkdir "$line"
 	printf "\nDirectory %s made." $line
 done < ./../albumlist.list
