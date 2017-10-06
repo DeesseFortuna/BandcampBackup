@@ -5,8 +5,6 @@ URL="$1" #ex. https://555notreal.bandcamp.com/music
 ARTIST="$2" #ex. 555notreal (no spaces)
 
 BB_WD=`echo $(pwd)` #store working directory
-echo $BB_WD
-
 BB_TMP=`mktemp -d` #make temp dir
 
 # check if tmp dir was created
@@ -18,9 +16,7 @@ fi
 function cleanup { # deletes the temp directory
   rm -rf "$BB_TMP"
   printf "\nDeleted temp working directory %s\n" $BB_TMP
-}
-
-trap cleanup EXIT # register the cleanup function to be called on the EXIT signal
+} trap cleanup EXIT # register the cleanup function to be called on the EXIT signal
 
 cd "$BB_TMP"
 printf "\nFetching page...\n"
