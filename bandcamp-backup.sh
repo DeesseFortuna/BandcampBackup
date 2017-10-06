@@ -1,105 +1,122 @@
 #!/bin/bash
-URL="$1" #give me the MUSIC directory with no trailing slash, i.e. https://artist.bandcamp.com/music
-ARTIST="$2" #no spaces, you can rename it after (yes I'm lazy) 
+#bandcamp-backup.v0.1.0 https://github.com/DeesseFortuna/backup-bandcamp
 
-printf "\nPre-execution cleanup..."
-rm ./index.temp*
-rm ./*.list
+URL="$1" #ex. https://555notreal.bandcamp.com/music
+ARTIST="$2" #ex. 555notreal (no spaces)
 
-printf "\nFetching page..."
+BB_WD=`echo $(pwd)` #store working directory
+echo $BB_WD
+
+BB_TMP=`mktemp -d` #make temp dir
+
+# check if tmp dir was created
+if [[ ! "$BB_TMP" || ! -d "$BB_TMP" ]]; then
+  echo "Could not create temp directory"
+  exit 1
+fi
+
+function cleanup { # deletes the temp directory
+  rm -rf "$BB_TMP"
+  printf "\nDeleted temp working directory %s\n" $BB_TMP
+}
+
+trap cleanup EXIT # register the cleanup function to be called on the EXIT signal
+
+cd "$BB_TMP"
+printf "\nFetching page...\n"
 wget -O index.temp $URL #get the page, save to specific temp filename
 
-grep -o '"\/album\/.*">' index.temp > albumdirlist.list #grep out the album urls
-grep -o '"\/track\/.*">' index.temp > trackdirlist.list #grep out the track urls
-rm ./index.temp* #delete temp index page(s)
+BB_ALB_DIR=$(mktemp albumdirlist.XXXXXXXXXX) # duplicates used for doing simple one-liners
+BB_ALB_DIR2=$(mktemp albumdirlist2.XXXXXXXXXX) # and shuffling back and forth
+BB_TRA_DIR=$(mktemp trackdirlist.XXXXXXXXXX) # instead of rewriting the original file
+BB_TRA_DIR2=$(mktemp trackdirlist2.XXXXXXXXXX)
 
-sed -e 's/^"//' albumdirlist.list > albumdirlist2.list #trim preceding double quote
-sed -e 's/^"//' trackdirlist.list > trackdirlist2.list
-rm ./albumdirlist.list
-rm ./trackdirlist.list
+grep -o '"\/album\/.*">' index.temp > "$BB_ALB_DIR" #grep out the album urls
+grep -o '"\/track\/.*">' index.temp > "$BB_TRA_DIR" #grep out the track urls
+rm index.temp #delete temp index page(s)
 
-N_ALBUMS=`cat albumdirlist2.list | wc -l` #get the length of albumdirlist2 (# of albums)
-N_TRACKS=`cat trackdirlist2.list | wc -l` #get length of trackdirlist2 (# of tracks)
+sed -e 's/^"//' "$BB_ALB_DIR" > "$BB_ALB_DIR2" #trim preceding double quote
+sed -e 's/^"//' "$BB_TRA_DIR" > "$BB_TRA_DIR2"
+rm $BB_ALB_DIR $BB_TRA_DIR
 
-printf "\nFound %s album and %s track directories:\n" $N_ALBUMS $N_TRACKS
-sed -e 's/">$//' albumdirlist2.list | sudo tee -a albumdirlist.list #trim trailing "> and print to console
-sed -e 's/">$//' trackdirlist2.list | sudo tee -a trackdirlist.list
-rm ./albumdirlist2.list
-rm ./trackdirlist2.list
+N_ALBUMS=`cat "$BB_ALB_DIR2" | wc -l` #get the length of albumdirlist2 (# of albums)
+N_TRACKS=`cat "$BB_TRA_DIR2" | wc -l` #get length of trackdirlist2 (# of tracks)
 
-sed -e 's/^\/album\///' albumdirlist.list > albumlist.list #trim preceding /album/
-sed -e 's/^\/track\///' trackdirlist.list > tracklist.list #trim preceding /track/
-sed -e 's/-/ /g' albumlist.list > albumlist2.list #replace - with ' '
-sed -e 's/-/ /g' tracklist.list > tracklist2.list
-rm ./albumlist.list
-rm ./tracklist.list
+printf "Found %s album and %s track directories:\n" $N_ALBUMS $N_TRACKS
+sed -e 's/">$//' "$BB_ALB_DIR2" | tee -a "$BB_ALB_DIR" #trim trailing "> and print to console
+sed -e 's/">$//' "$BB_TRA_DIR2" | tee -a "$BB_TRA_DIR"
+rm $BB_ALB_DIR2 $BB_TRA_DIR2
+
+BB_ALB_T=$(mktemp albumlist.XXXXXXXXXX) #these will hold the humanized strings
+BB_ALB_T2=$(mktemp albumlist2.XXXXXXXXXX) #used for directories 
+BB_TRA_T=$(mktemp tracklist.XXXXXXXXXX)  #and displaying item progress
+BB_TRA_T2=$(mktemp tracklist2.XXXXXXXXXX)
+
+sed -e 's/^\/album\///' "$BB_ALB_DIR" > "$BB_ALB_T" #trim preceding /album/
+sed -e 's/^\/track\///' "$BB_TRA_DIR" > "$BB_TRA_T" #trim preceding /track/
+sed -e 's/-/ /g' "$BB_ALB_T" > "$BB_ALB_T2" #replace - with ' '
+sed -e 's/-/ /g' "$BB_TRA_T" > "$BB_TRA_T2"
+rm $BB_ALB_T $BB_TRA_T
 
 while IFS= read -r line; do
 	Target=`echo $line | tr [A-Z] [a-z] | sed -e 's/^./\U&/g; s/ ./\U&/g'` #capitalizes the first letter of each word
-	echo $Target >> albumlist.list
-done < albumlist2.list
-rm ./albumlist2.list
+	echo $Target >> "$BB_ALB_T"
+done < "$BB_ALB_T2"
+rm $BB_ALB_T2
 
 while IFS= read -r line; do
 	Target=`echo $line | tr [A-Z] [a-z] | sed -e 's/^./\U&/g; s/ ./\U&/g'`
-	echo $Target >> tracklist.list
-done < tracklist2.list
-rm ./tracklist2.list
+	echo $Target >> "$BB_TRA_T"
+done < "$BB_TRA_T2"
+rm $BB_TRA_T2
 
 printf "\nGenerated these pretty directory names:\n"
 printf "..............Albums..............\n"
-cat albumlist.list
+cat "$BB_ALB_T"
 printf "..............Tracks..............\n"
-cat tracklist.list
+cat "$BB_TRA_T"
 
 printf "\nMaking artist directory...\n"
-mkdir "$ARTIST"
-printf "\nDirectory %s made." $ARTIST
+mkdir "$BB_WD/$ARTIST/"
+if [[ ! "$BB_WD/$ARTIST" || ! -d "$BB_WD/$ARTIST" ]]; then
+  echo "Could not create artist directory"
+  exit 1
+fi
+printf "\nDirectory %s/%s/ made.\n" $BB_WD $ARTIST
 
-
-printf "\nDescending to ./%s\n" $ARTIST
-cd "$ARTIST"
-
-printf "\nMaking album directories..."
+printf "Making album directories..."
 IFS=; while read -r line; do #reads whole lines instead of single words like `while IFS= read -r`
-	mkdir "$line"
-	printf "\nDirectory %s made." $line
-done < ./../albumlist.list
+	mkdir "$BB_WD/$ARTIST/$line/"
+	if [[ ! "$BB_WD/$ARTIST/$line" || ! -d "$BB_WD/$ARTIST/$line" ]]; then
+	  echo "Could not create album directory"
+	  exit 1
+	fi
+	printf "\nDirectory %s/%s/%s made." $BB_WD $ARTIST $line
+done < "$BB_ALB_T"
 
 ROOTURL="${URL%/music}" #removing /music/ from end of URL, for use with youtube-dl below
 
 printf "\n\nStarting album downloads...\n"
 
-COUNT=1
-IFS=; while read -r line; do
-	echo "Progress: Item #" $COUNT "/" $N_ALBUMS ":"
-	ALBUM=`tail -n+$COUNT ./../albumlist.list | head -n1`
-	printf "\nDescending to ./%s\n" $ALBUM
-	cd "$ALBUM"
-	echo "Downloading album:" $ALBUM
-	youtube-dl -f bestaudio -x --audio-quality=0 --audio-format=mp3 -o "%(title)s.%(ext)s" $ROOTURL$line 
-		#take best audio, convert to 320kbps MP3, format TITLE.EXT
-	printf "Ascending...\n"
-	cd ..
+COUNT=1; IFS=; while read -r line; do
+	printf "\nProgress: Album #%s/%s\n" $COUNT $N_ALBUMS
+	ALBUM=`tail -n+$COUNT "$BB_ALB_T" | head -n1`
+	printf "\nDownloading album: %s\n" $ALBUM
+	youtube-dl -w --no-post-overwrites -f bestaudio -x --audio-quality=0 --audio-format=mp3 -o "$BB_WD/$ARTIST/$ALBUM/%(title)s.%(ext)s" $ROOTURL$line 
+	  #take best audio, convert to 320kbps MP3, format TITLE.EXT
 	let "COUNT++"
-done < ./../albumdirlist.list
+done < "$BB_ALB_DIR"
 
 printf "\nStarting track downloads...\n"
 
-COUNT=1
-IFS=; while read -r line; do
-	echo "Progress: Item #" $COUNT "/" $N_TRACKS ":"
-	TRACK=`tail -n+$COUNT ./../tracklist.list | head -n1`
-	echo "Downloading track:" $TRACK
-	youtube-dl -f bestaudio -x --audio-quality=0 --audio-format=mp3 -o "%(title)s.%(ext)s" $ROOTURL$line 
-		#take best audio, convert to 320kbps MP3, format TITLE.EXT
+
+COUNT=1; IFS=; while read -r line; do
+	printf "\nProgress: Track #%s/%s\n" $COUNT $N_TRACKS
+	TRACK=`tail -n+$COUNT "$BB_TRA_T" | head -n1`
+	printf "\nDownloading track: %s\n" $TRACK
+	youtube-dl -w --no-post-overwrites -f bestaudio -x --audio-quality=0 --audio-format=mp3 -o "$BB_WD/$ARTIST/%(title)s.%(ext)s" $ROOTURL$line 
+	  #take best audio, convert to 320kbps MP3, format TITLE.EXT
 	let "COUNT++"
-done < ./../trackdirlist.list
-
-printf "\nAscending..."
-cd ..
-
-printf "\nCleaning up temp files..."
-rm ./*.list
+done < "$BB_TRA_DIR"
 
 printf "\nDone!\n"
