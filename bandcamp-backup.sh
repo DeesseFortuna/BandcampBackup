@@ -97,26 +97,22 @@ done < "$BB_ALB_T"
 ROOTURL="${URL%/music}" #removing /music/ from end of URL, for use with youtube-dl below
 
 printf "\n\nStarting album downloads...\n"
-
 COUNT=1; IFS=; while read -r line; do
 	printf "\nProgress: Album #%s/%s\n" $COUNT $N_ALBUMS
 	ALBUM=`tail -n+$COUNT "$BB_ALB_T" | head -n1`
 	printf "\nDownloading album: %s\n" $ALBUM
-	youtube-dl -w --no-post-overwrites -f bestaudio -x --audio-quality=0 --audio-format=mp3 -o "$BB_WD/$ARTIST/$ALBUM/%(title)s.%(ext)s" $ROOTURL$line 
+	youtube-dl -f bestaudio -x --audio-quality=0 --audio-format=mp3 -o "$BB_WD/$ARTIST/$ALBUM/%(title)s.%(ext)s" $ROOTURL$line 
 	  #take best audio, convert to 320kbps MP3, format TITLE.EXT
 	let "COUNT++"
 done < "$BB_ALB_DIR"
 
-printf "\nStarting track downloads...\n"
-
-
+printf "\n\nStarting track downloads...\n"
 COUNT=1; IFS=; while read -r line; do
 	printf "\nProgress: Track #%s/%s\n" $COUNT $N_TRACKS
 	TRACK=`tail -n+$COUNT "$BB_TRA_T" | head -n1`
 	printf "\nDownloading track: %s\n" $TRACK
-	youtube-dl -w --no-post-overwrites -f bestaudio -x --audio-quality=0 --audio-format=mp3 -o "$BB_WD/$ARTIST/%(title)s.%(ext)s" $ROOTURL$line 
+	youtube-dl -f bestaudio -x --audio-quality=0 --audio-format=mp3 -o "$BB_WD/$ARTIST/%(title)s.%(ext)s" $ROOTURL$line 
 	  #take best audio, convert to 320kbps MP3, format TITLE.EXT
 	let "COUNT++"
 done < "$BB_TRA_DIR"
-
 printf "\nDone!\n"
