@@ -31,29 +31,32 @@ BB_ALB_DIR2=$(mktemp albumdirlist2.XXXXXXXXXX) # and shuffling back and forth
 BB_TRA_DIR=$(mktemp trackdirlist.XXXXXXXXXX) # instead of rewriting the original file
 BB_TRA_DIR2=$(mktemp trackdirlist2.XXXXXXXXXX)
 
-grep -o '"\/album\/.*">' index.temp > "$BB_ALB_DIR" #grep out the album urls
-grep -o '"\/track\/.*">' index.temp > "$BB_TRA_DIR" #grep out the track urls
+grep -o '"\/album\/[a-zA-Z0-9-]*' index.temp > "$BB_ALB_DIR" #grep out the album urls
+grep -o '"\/track\/[a-zA-Z0-9-]*' index.temp > "$BB_TRA_DIR" #grep out the track urls
 rm index.temp #delete temp index page(s)
 
-sed -e 's/^"//' "$BB_ALB_DIR" > "$BB_ALB_DIR2" #trim preceding double quote
-sed -e 's/^"//' "$BB_TRA_DIR" > "$BB_TRA_DIR2"
-rm $BB_ALB_DIR $BB_TRA_DIR
+awk '!a[$0]++' "$BB_ALB_DIR" > "$BB_ALB_DIR2" #remove dupes
+awk '!a[$0]++' "$BB_TRA_DIR" > "$BB_TRA_DIR2"
 
-N_ALBUMS=`cat "$BB_ALB_DIR2" | wc -l` #get the length of albumdirlist2 (# of albums)
-N_TRACKS=`cat "$BB_TRA_DIR2" | wc -l` #get length of trackdirlist2 (# of tracks)
+sed -e 's/^"//' "$BB_ALB_DIR2" > "$BB_ALB_DIR" #trim preceding double quote
+sed -e 's/^"//' "$BB_TRA_DIR2" > "$BB_TRA_DIR"
+rm $BB_ALB_DIR2 $BB_TRA_DIR2
+
+N_ALBUMS=`cat "$BB_ALB_DIR" | wc -l` #get the length of albumdirlist2 (# of albums)
+N_TRACKS=`cat "$BB_TRA_DIR" | wc -l` #get length of trackdirlist2 (# of tracks)
 
 printf "Found %s album and %s track directories:\n" $N_ALBUMS $N_TRACKS
-sed -e 's/">$//' "$BB_ALB_DIR2" | tee -a "$BB_ALB_DIR" #trim trailing "> and print to console
-sed -e 's/">$//' "$BB_TRA_DIR2" | tee -a "$BB_TRA_DIR"
-rm $BB_ALB_DIR2 $BB_TRA_DIR2
+sed -e 's/">$//' "$BB_ALB_DIR" | tee -a "$BB_ALB_DIR2" #trim trailing "> and print to console
+sed -e 's/">$//' "$BB_TRA_DIR" | tee -a "$BB_TRA_DIR2"
+rm $BB_ALB_DIR $BB_TRA_DIR
 
 BB_ALB_T=$(mktemp albumlist.XXXXXXXXXX) #these will hold the humanized strings
 BB_ALB_T2=$(mktemp albumlist2.XXXXXXXXXX) #used for directories 
 BB_TRA_T=$(mktemp tracklist.XXXXXXXXXX)  #and displaying item progress
 BB_TRA_T2=$(mktemp tracklist2.XXXXXXXXXX)
 
-sed -e 's/^\/album\///' "$BB_ALB_DIR" > "$BB_ALB_T" #trim preceding /album/
-sed -e 's/^\/track\///' "$BB_TRA_DIR" > "$BB_TRA_T" #trim preceding /track/
+sed -e 's/^\/album\///' "$BB_ALB_DIR2" > "$BB_ALB_T" #trim preceding /album/
+sed -e 's/^\/track\///' "$BB_TRA_DIR2" > "$BB_TRA_T" #trim preceding /track/
 sed -e 's/-/ /g' "$BB_ALB_T" > "$BB_ALB_T2" #replace - with ' '
 sed -e 's/-/ /g' "$BB_TRA_T" > "$BB_TRA_T2"
 rm $BB_ALB_T $BB_TRA_T
@@ -104,7 +107,7 @@ COUNT=1; IFS=; while read -r line; do
 	youtube-dl -f bestaudio -x --audio-quality=0 --audio-format=mp3 -o "$BB_WD/$ARTIST/$ALBUM/%(title)s.%(ext)s" $ROOTURL$line 
 	  #take best audio, convert to 320kbps MP3, format TITLE.EXT
 	let "COUNT++"
-done < "$BB_ALB_DIR"
+done < "$BB_ALB_DIR2"
 
 printf "\n\nStarting track downloads...\n"
 COUNT=1; IFS=; while read -r line; do
@@ -114,5 +117,5 @@ COUNT=1; IFS=; while read -r line; do
 	youtube-dl -f bestaudio -x --audio-quality=0 --audio-format=mp3 -o "$BB_WD/$ARTIST/%(title)s.%(ext)s" $ROOTURL$line 
 	  #take best audio, convert to 320kbps MP3, format TITLE.EXT
 	let "COUNT++"
-done < "$BB_TRA_DIR"
+done < "$BB_TRA_DIR2"
 printf "\nDone!\n"
